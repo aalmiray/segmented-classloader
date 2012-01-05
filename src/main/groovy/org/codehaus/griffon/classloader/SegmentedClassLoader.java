@@ -15,13 +15,11 @@
  */
 package org.codehaus.griffon.classloader;
 
-import org.apache.commons.lang.reflect.MethodUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.security.SecureClassLoader;
 import java.util.Arrays;
@@ -146,7 +144,7 @@ public class SegmentedClassLoader extends SecureClassLoader {
         return new ClasspathModule(configuration, newClassLoader(configuration));
     }
 
-    private ClassLoader newClassLoader(ClasspathModuleConfiguration configuration) {
+    private UnmodifiableURLClassLoader newClassLoader(ClasspathModuleConfiguration configuration) {
         return new UnmodifiableURLClassLoader(configuration.getName(), configuration.getUrls(), getParent());
     }
 
@@ -176,7 +174,7 @@ public class SegmentedClassLoader extends SecureClassLoader {
     }
 
     private static interface ClassLoaderClosure<V> {
-        boolean execute(ClassLoader classLoader);
+        boolean execute(UnmodifiableURLClassLoader classLoader);
 
         V getValue();
 
@@ -205,7 +203,7 @@ public class SegmentedClassLoader extends SecureClassLoader {
 
         if (clazz == null) {
             clazz = withClassLoaders(new AbstractClassLoaderClosure<Class<?>>() {
-                public boolean execute(ClassLoader classLoader) {
+                public boolean execute(UnmodifiableURLClassLoader classLoader) {
                     try {
                         value = classLoader.loadClass(name);
                     } catch (ClassNotFoundException cnfe) {
@@ -232,8 +230,12 @@ public class SegmentedClassLoader extends SecureClassLoader {
     @Override
     protected Class<?> findClass(final String name) throws ClassNotFoundException {
         return withClassLoaders(new AbstractClassLoaderClosure<Class<?>>() {
-            public boolean execute(ClassLoader classLoader) {
-                value = invokeMethod(classLoader, "findClass", name, Class.class);
+            public boolean execute(UnmodifiableURLClassLoader classLoader) {
+                try {
+                    value = classLoader.doFindClass(name);
+                } catch (ClassNotFoundException cnfe) {
+                    // ignore
+                }
                 return value != null;
             }
 
@@ -248,7 +250,7 @@ public class SegmentedClassLoader extends SecureClassLoader {
     @Override
     public URL getResource(final String name) {
         return withClassLoadersNoExceptions(new AbstractClassLoaderClosure<URL>() {
-            public boolean execute(ClassLoader classLoader) {
+            public boolean execute(UnmodifiableURLClassLoader classLoader) {
                 value = classLoader.getResource(name);
                 return value != null;
             }
@@ -258,7 +260,7 @@ public class SegmentedClassLoader extends SecureClassLoader {
     @Override
     public Enumeration<URL> getResources(final String name) throws IOException {
         Enumeration<URL> resources = withClassLoadersNoExceptions(new AbstractClassLoaderClosure<Enumeration<URL>>() {
-            public boolean execute(ClassLoader classLoader) {
+            public boolean execute(UnmodifiableURLClassLoader classLoader) {
                 try {
                     value = classLoader.getResources(name);
                 } catch (IOException ioe) {
@@ -278,8 +280,8 @@ public class SegmentedClassLoader extends SecureClassLoader {
     @Override
     protected URL findResource(final String name) {
         return withClassLoadersNoExceptions(new AbstractClassLoaderClosure<URL>() {
-            public boolean execute(ClassLoader classLoader) {
-                value = invokeMethod(classLoader, "findResource", name, URL.class);
+            public boolean execute(UnmodifiableURLClassLoader classLoader) {
+                value = classLoader.doFindResource(name);
                 return value != null;
             }
         });
@@ -288,8 +290,12 @@ public class SegmentedClassLoader extends SecureClassLoader {
     @Override
     protected Enumeration<URL> findResources(final String name) throws IOException {
         Enumeration<URL> resources = withClassLoadersNoExceptions(new AbstractClassLoaderClosure<Enumeration<URL>>() {
-            public boolean execute(ClassLoader classLoader) {
-                value = invokeMethod(classLoader, "findResources", name, Enumeration.class);
+            public boolean execute(UnmodifiableURLClassLoader classLoader) {
+                try {
+                    value = classLoader.doFindResources(name);
+                } catch (IOException ioe) {
+                    // ignore
+                }
                 return value != null;
             }
         });
@@ -304,24 +310,10 @@ public class SegmentedClassLoader extends SecureClassLoader {
     @Override
     public InputStream getResourceAsStream(final String name) {
         return withClassLoadersNoExceptions(new AbstractClassLoaderClosure<InputStream>() {
-            public boolean execute(ClassLoader classLoader) {
+            public boolean execute(UnmodifiableURLClassLoader classLoader) {
                 value = classLoader.getResourceAsStream(name);
                 return value != null;
             }
         });
-    }
-
-    private <V> V invokeMethod(Object object, String methodName, Object arg, Class<V> returnType) {
-        try {
-            Object result = MethodUtils.invokeExactMethod(object, methodName, arg);
-            returnType.cast(result);
-        } catch (NoSuchMethodException e) {
-            // ignore
-        } catch (IllegalAccessException e) {
-            // ignore ?
-        } catch (InvocationTargetException e) {
-            // ignore ?
-        }
-        return null;
     }
 }

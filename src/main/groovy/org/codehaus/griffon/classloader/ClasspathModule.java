@@ -20,10 +20,10 @@ package org.codehaus.griffon.classloader;
  */
 public class ClasspathModule {
     private final ClasspathModuleConfiguration configuration;
-    private final ClassLoader classLoader;
+    private final UnmodifiableURLClassLoader classLoader;
     private boolean active = true;
 
-    public ClasspathModule(ClasspathModuleConfiguration configuration, ClassLoader classLoader) {
+    public ClasspathModule(ClasspathModuleConfiguration configuration, UnmodifiableURLClassLoader classLoader) {
         this.configuration = configuration;
         this.classLoader = classLoader;
     }
@@ -36,7 +36,7 @@ public class ClasspathModule {
         return configuration;
     }
 
-    public ClassLoader getClassLoader() {
+    public UnmodifiableURLClassLoader getClassLoader() {
         return classLoader;
     }
 

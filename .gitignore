@@ -1,5 +1,5 @@
 build
 .gradle
-classloader.iml
-classloader.ipr
-classloader.iws
+segmented-classloader.iml
+segmented-classloader.ipr
+segmented-classloader.iws

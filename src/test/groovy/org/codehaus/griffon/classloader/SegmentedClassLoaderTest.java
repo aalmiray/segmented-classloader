@@ -54,7 +54,5 @@ public class SegmentedClassLoaderTest extends TestCase {
         } catch (ClassNotFoundException ncfe) {
             fail("Should have found class 'groovy.lang.Closure");
         }
-        
-        System.out.println(classLoader.classpath());
     }
 }

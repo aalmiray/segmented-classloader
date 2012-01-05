@@ -15,8 +15,10 @@
  */
 package org.codehaus.griffon.classloader;
 
+import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.Enumeration;
 
 /**
  * @author Andres Almiray
@@ -36,5 +38,17 @@ public class UnmodifiableURLClassLoader extends URLClassLoader {
     @Override
     protected void addURL(URL url) {
         throw new UnsupportedOperationException("Classloader <" + name + "> is unmodifiable!");
+    }
+
+    URL doFindResource(String name) {
+        return super.findResource(name);
+    }
+
+    Enumeration<URL> doFindResources(String name) throws IOException {
+        return super.findResources(name);
+    }
+
+    Class<?> doFindClass(String name) throws ClassNotFoundException {
+        return super.findClass(name);
     }
 }
